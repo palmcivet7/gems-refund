@@ -1,66 +1,16 @@
-## Foundry
+# GEMS Refund
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A contract inspired by the refund policy of the [GEMS RWA project](https://everlaunch.org/gems/).
 
-Foundry consists of:
+## Overview
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The deployer must provide the GEMS contract address, ETH/USD pricefeed contract address, and the time refunds are available in the constructor.
 
-## Documentation
+The `GemsRefund` contract needs to be funded with the appropriate amount of ETH to facilitate refunds.
 
-https://book.getfoundry.sh/
+Once the expiry time has been reached, GEMS holders can call the `refund()` function to receive $4/ETH per token. Holders must first have approved the `GemsRefund` contract to spend their tokens on the GEMS contract.
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
 ```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+address internal constant GEMS_ETHEREUM = 0x9313231236D2F3e6cadD38345DF7958536777D02;
+address internal constant GEMS_POLYGON = 0x25eFae7B0b2866CaFB14E8eaD333a42eeb2A0b80;
 ```
