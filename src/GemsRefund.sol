@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.24;
 
+import {console} from "forge-std/console.sol";
+
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
@@ -16,19 +18,23 @@ contract GemsRefund is Ownable {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
+    error GemsRefund__NoZeroValue();
     error GemsRefund__RefundPolicyNotActiveYet();
     error GemsRefund__InsufficientEthBalance();
     error GemsRefund__EthTransferFailed();
     error GemsRefund__InsufficientGemsBalance();
     error GemsRefund__GemsTransferFailed();
+    error GemsRefund__InvalidAmount();
 
     /*//////////////////////////////////////////////////////////////
                                VARIABLES
     //////////////////////////////////////////////////////////////*/
+    uint256 internal constant GEMS_PRECISION = 10 ** 6;
     uint256 internal constant PRICE_FEED_PRECISION = 10 ** 8;
     uint256 internal constant WAD_PRECISION = 10 ** 18;
     uint256 internal constant SCALING_FACTOR = WAD_PRECISION / PRICE_FEED_PRECISION;
-    uint256 internal constant REFUND_VALUE = 4;
+    uint256 internal constant REFUND_VALUE = 4 * 1e18;
+    uint256 internal constant GEMS_SUPPLY = 20_000_000 * 1e6;
 
     IERC20 internal immutable i_gems;
     AggregatorV3Interface internal immutable i_priceFeed;
@@ -54,10 +60,11 @@ contract GemsRefund is Ownable {
     // msg.sender must approve address(this) on gems contract first
     function refund(uint256 _gemsAmount) external {
         if (block.timestamp < i_expiryTime) revert GemsRefund__RefundPolicyNotActiveYet();
+        if (_gemsAmount > GEMS_SUPPLY) revert GemsRefund__InvalidAmount();
 
         uint256 ethUsdPrice = getLatestPrice();
         uint256 ethAmountPerGem = (REFUND_VALUE * WAD_PRECISION) / ethUsdPrice;
-        uint256 totalEthRefund = ethAmountPerGem * _gemsAmount;
+        uint256 totalEthRefund = ((ethAmountPerGem * _gemsAmount) / GEMS_PRECISION);
         if (totalEthRefund > address(this).balance) revert GemsRefund__InsufficientEthBalance();
 
         emit GemsRefunded(_gemsAmount);
@@ -87,6 +94,18 @@ contract GemsRefund is Ownable {
     function getLatestPrice() public view returns (uint256) {
         (, int256 price,,,) = i_priceFeed.latestRoundData();
         return uint256(price) * SCALING_FACTOR;
+    }
+
+    function getGems() external view returns (address) {
+        return address(i_gems);
+    }
+
+    function getPriceFeed() external view returns (address) {
+        return address(i_priceFeed);
+    }
+
+    function getExpiryTime() external view returns (uint256) {
+        return i_expiryTime;
     }
 
     receive() external payable {}
