@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.25;
 
-import {console} from "forge-std/console.sol";
+// import {console} from "forge-std/console.sol";
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -43,7 +43,10 @@ contract GemsRefund is Ownable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
-    event GemsRefunded(uint256 gemsAmount);
+    /// @param gemsAmount The amount of GEMS being refunded
+    /// @param ethAmountPerGem The amount of ETH a GEMS token is worth
+    /// @param totalEthRefund The amount of ETH received as a refund
+    event GemsRefunded(uint256 indexed gemsAmount, uint256 indexed ethAmountPerGem, uint256 indexed totalEthRefund);
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -57,7 +60,7 @@ contract GemsRefund is Ownable {
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
-    // msg.sender must approve address(this) on gems contract first
+    /// @notice msg.sender must approve address(this) on gems contract first
     function refund(uint256 _gemsAmount) external {
         if (block.timestamp < i_expiryTime) revert GemsRefund__RefundPolicyNotActiveYet();
         if (_gemsAmount > GEMS_SUPPLY) revert GemsRefund__InvalidAmount();
@@ -67,7 +70,7 @@ contract GemsRefund is Ownable {
         uint256 totalEthRefund = ((ethAmountPerGem * _gemsAmount) / GEMS_PRECISION);
         if (totalEthRefund > address(this).balance) revert GemsRefund__InsufficientEthBalance();
 
-        emit GemsRefunded(_gemsAmount);
+        emit GemsRefunded(_gemsAmount, ethAmountPerGem, totalEthRefund);
 
         if (!i_gems.transferFrom(msg.sender, address(this), _gemsAmount)) revert GemsRefund__GemsTransferFailed();
         (bool success,) = payable(msg.sender).call{value: totalEthRefund}("");
