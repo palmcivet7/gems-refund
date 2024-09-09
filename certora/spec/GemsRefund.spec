@@ -14,6 +14,13 @@ methods {
 }
 
 /*//////////////////////////////////////////////////////////////
+                          DEFINITIONS
+//////////////////////////////////////////////////////////////*/
+definition WAD() returns uint = 1000000000000000000;
+definition REFUND_VALUE() returns uint = 4000000000000000000;
+definition GEMS_PRECISION() returns uint = 1000000;
+
+/*//////////////////////////////////////////////////////////////
                              RULES
 //////////////////////////////////////////////////////////////*/
 /// @notice refund reverts if caller is not holding the `amount` of GEMS
@@ -37,20 +44,25 @@ rule refundRevertsIfNotTime(uint amount) {
     assert lastReverted;
 }
 
+/// @notice asserts the correct balance changes of GEMS and ETH for a successful refund
 rule refundIntegrity(uint amount) {
     env e;
+    require e.msg.sender != currentContract;
     require e.block.timestamp >= getExpiryTime();
     require amount > 0;
     require gems.balanceOf(e.msg.sender) >= amount;
 
     mathint gemsBalanceBefore = gems.balanceOf(e.msg.sender);
+    mathint ethBalanceBefore = nativeBalances[e.msg.sender];
 
     refund(e, amount);
 
     mathint gemsBalanceAfter = gems.balanceOf(e.msg.sender);
+    mathint ethBalanceAfter = nativeBalances[e.msg.sender];
 
-    // mathint expectedEthBalance = ;
-    mathint actualEthBalance = nativeBalances[e.msg.sender];
+    mathint expectedEthRefunded = (((REFUND_VALUE() * WAD()) / getLatestPrice()) * amount) / GEMS_PRECISION();
+    mathint actualEthRefunded = ethBalanceAfter - ethBalanceBefore;
 
+    assert expectedEthRefunded == actualEthRefunded;
     assert gemsBalanceAfter == gemsBalanceBefore - amount;
 }
