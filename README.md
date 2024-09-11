@@ -10,6 +10,8 @@ The `GemsRefund` contract needs to be funded with the appropriate amount of ETH 
 
 Once the expiry time has been reached, GEMS holders can call the `refund()` function to receive $4/ETH per token. Holders must first have approved the `GemsRefund` contract to spend their tokens on the GEMS contract.
 
+### GEMS Token contracts:
+
 ```
 address internal constant GEMS_ETHEREUM = 0x9313231236D2F3e6cadD38345DF7958536777D02;
 address internal constant GEMS_POLYGON = 0x25eFae7B0b2866CaFB14E8eaD333a42eeb2A0b80;
