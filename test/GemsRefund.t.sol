@@ -92,4 +92,15 @@ contract GemsRefundTest is Test {
         assertEq(actualEthBalance, expectedEthBalance);
         assertEq(gemsBalanceAfter, gemsBalanceBefore - _amount);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                 OWNER
+    //////////////////////////////////////////////////////////////*/
+    function test_withdrawEth_works() public {
+        vm.deal(address(gemsRefund), CONTRACT_ETH_BALANCE);
+        vm.prank(gemsRefund.owner());
+        gemsRefund.withdrawEth(CONTRACT_ETH_BALANCE);
+        assertEq(address(gemsRefund).balance, 0);
+        assertEq(owner.balance, CONTRACT_ETH_BALANCE);
+    }
 }
