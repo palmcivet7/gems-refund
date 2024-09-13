@@ -105,10 +105,16 @@ contract GemsRefundTest is Test {
     }
 
     function test_withdrawEth_reverts_if_not_owner(address _caller) public {
-        vm.deal(address(gemsRefund), CONTRACT_ETH_BALANCE);
         vm.assume(_caller != gemsRefund.owner());
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", _caller));
         vm.prank(_caller);
         gemsRefund.withdrawEth(CONTRACT_ETH_BALANCE);
+    }
+
+    function test_withdrawGems_reverts_if_not_owner(address _caller) public {
+        vm.assume(_caller != gemsRefund.owner());
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", _caller));
+        vm.prank(_caller);
+        gemsRefund.withdrawGems(CONTRACT_ETH_BALANCE);
     }
 }
