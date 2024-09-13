@@ -3,7 +3,7 @@
 pragma solidity 0.8.25;
 
 import {Test} from "forge-std/Test.sol";
-import {GemsRefund} from "../src/GemsRefund.sol";
+import {GemsRefund, Ownable} from "../src/GemsRefund.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
 
@@ -102,5 +102,13 @@ contract GemsRefundTest is Test {
         gemsRefund.withdrawEth(CONTRACT_ETH_BALANCE);
         assertEq(address(gemsRefund).balance, 0);
         assertEq(owner.balance, CONTRACT_ETH_BALANCE);
+    }
+
+    function test_withdrawEth_reverts_if_not_owner(address _caller) public {
+        vm.deal(address(gemsRefund), CONTRACT_ETH_BALANCE);
+        vm.assume(_caller != gemsRefund.owner());
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", _caller));
+        vm.prank(_caller);
+        gemsRefund.withdrawEth(CONTRACT_ETH_BALANCE);
     }
 }
