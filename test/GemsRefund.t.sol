@@ -111,6 +111,12 @@ contract GemsRefundTest is Test {
         gemsRefund.withdrawEth(CONTRACT_ETH_BALANCE);
     }
 
+    function test_withdrawEth_reverts_if_insufficient_balance() public {
+        vm.prank(gemsRefund.owner());
+        vm.expectRevert(GemsRefund.GemsRefund__InsufficientEthBalance.selector);
+        gemsRefund.withdrawEth(1);
+    }
+
     function test_withdrawGems_reverts_if_not_owner(address _caller) public {
         vm.assume(_caller != gemsRefund.owner());
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", _caller));
