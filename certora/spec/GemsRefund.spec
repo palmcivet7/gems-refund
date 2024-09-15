@@ -16,9 +16,11 @@ methods {
 /*//////////////////////////////////////////////////////////////
                           DEFINITIONS
 //////////////////////////////////////////////////////////////*/
-definition WAD() returns uint = 1000000000000000000;
+definition PRICE_FEED_PRECISION() returns uint = 100000000;
 definition REFUND_VALUE() returns uint = 4000000000000000000;
 definition GEMS_PRECISION() returns uint = 1000000;
+definition MINIMUM_GEMS_REFUND() returns uint = 10000;
+definition MAXIMUM_GEMS_REFUND() returns uint = 21000000000000;
 
 /*//////////////////////////////////////////////////////////////
                              RULES
@@ -28,7 +30,7 @@ rule refundRevertsIfGemsBalanceInsufficient(uint amount) {
     env e;
     require e.msg.sender != currentContract;
     require e.block.timestamp >= getExpiryTime();
-    require amount > 0;
+    require amount > MINIMUM_GEMS_REFUND();
     require gems.balanceOf(e.msg.sender) < amount;
 
     refund@withrevert(e, amount);
@@ -44,12 +46,22 @@ rule refundRevertsIfNotTime(uint amount) {
     assert lastReverted;
 }
 
+/// @notice refund reverts if invalid `amount` of GEMS
+rule refundRevertsIfInvalidAmount(uint amount) {
+    env e;
+    require e.block.timestamp >= getExpiryTime();
+    require amount < MINIMUM_GEMS_REFUND() || amount > MAXIMUM_GEMS_REFUND();
+
+    refund@withrevert(e, amount);
+    assert lastReverted;
+}
+
 /// @notice asserts the correct balance changes of GEMS and ETH for a successful refund
 rule refundIntegrity(uint amount) {
     env e;
     require e.msg.sender != currentContract;
     require e.block.timestamp >= getExpiryTime();
-    require amount > 0;
+    require amount > MINIMUM_GEMS_REFUND();
     require gems.balanceOf(e.msg.sender) >= amount;
 
     mathint gemsBalanceBefore = gems.balanceOf(e.msg.sender);
@@ -60,7 +72,7 @@ rule refundIntegrity(uint amount) {
     mathint gemsBalanceAfter = gems.balanceOf(e.msg.sender);
     mathint ethBalanceAfter = nativeBalances[e.msg.sender];
 
-    mathint expectedEthRefunded = (((REFUND_VALUE() * WAD()) / getLatestPrice()) * amount) / GEMS_PRECISION();
+    mathint expectedEthRefunded = (((REFUND_VALUE() * PRICE_FEED_PRECISION()) / getLatestPrice()) * amount) / GEMS_PRECISION();
     mathint actualEthRefunded = ethBalanceAfter - ethBalanceBefore;
 
     assert expectedEthRefunded == actualEthRefunded;

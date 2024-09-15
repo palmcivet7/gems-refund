@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.25;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {GemsRefund, Ownable} from "../src/GemsRefund.sol";
 import {ERC20Mock} from "@openzeppelin/contracts/mocks/token/ERC20Mock.sol";
 import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/tests/MockV3Aggregator.sol";
@@ -11,7 +11,7 @@ contract GemsRefundTest is Test {
     /*//////////////////////////////////////////////////////////////
                                VARIABLES
     //////////////////////////////////////////////////////////////*/
-    uint256 public constant GEMS_SUPPLY = 20_000_000 * 1e6;
+    uint256 public constant GEMS_SUPPLY = 21_000_000 * 1e6;
     uint8 public constant DECIMALS = 8;
     int256 public constant INITIAL_ETH_PRICE = 3000 * 1e8;
     uint256 public constant EXPIRY_TIME = 3 * (365 days);
@@ -19,6 +19,8 @@ contract GemsRefundTest is Test {
     uint256 internal constant WAD_PRECISION = 10 ** 18;
     uint256 internal constant REFUND_VALUE = 4 * 1e18;
     uint256 internal constant GEMS_PRECISION = 10 ** 6;
+    uint256 internal constant PRICE_FEED_PRECISION = 10 ** 8;
+    uint256 internal constant MINIMUM_GEMS_FOR_REFUND = 10 ** 4;
 
     GemsRefund public gemsRefund;
     MockV3Aggregator public priceFeed;
@@ -47,6 +49,17 @@ contract GemsRefundTest is Test {
         assertEq(gemsRefund.getExpiryTime(), EXPIRY_TIME);
     }
 
+    function test_constructor_reverts() public {
+        vm.expectRevert(GemsRefund.GemsRefund__NoZeroAddress.selector);
+        new GemsRefund(address(0), address(priceFeed), EXPIRY_TIME);
+
+        vm.expectRevert(GemsRefund.GemsRefund__NoZeroAddress.selector);
+        new GemsRefund(address(gems), address(0), EXPIRY_TIME);
+
+        vm.expectRevert(GemsRefund.GemsRefund__InvalidExpiryTime.selector);
+        new GemsRefund(address(gems), address(priceFeed), block.timestamp - 1);
+    }
+
     /*//////////////////////////////////////////////////////////////
                                  REFUND
     //////////////////////////////////////////////////////////////*/
@@ -63,14 +76,18 @@ contract GemsRefundTest is Test {
     }
 
     function test_refund_reverts_if_no_eth(uint256 _amount) public {
-        _amount = bound(_amount, 1, GEMS_SUPPLY);
+        _amount = bound(_amount, MINIMUM_GEMS_FOR_REFUND, GEMS_SUPPLY);
+        gems.mint(holder, _amount);
+        vm.prank(holder);
+        gems.approve(address(gemsRefund), _amount);
         vm.warp(EXPIRY_TIME + 1);
-        vm.expectRevert(GemsRefund.GemsRefund__InsufficientEthBalance.selector);
+        vm.prank(holder);
+        vm.expectRevert(GemsRefund.GemsRefund__EthTransferFailed.selector);
         gemsRefund.refund(_amount);
     }
 
     function test_refund_works(uint256 _amount) public {
-        _amount = bound(_amount, 1, GEMS_SUPPLY);
+        _amount = bound(_amount, MINIMUM_GEMS_FOR_REFUND, GEMS_SUPPLY);
         gems.mint(holder, _amount);
 
         vm.deal(address(gemsRefund), CONTRACT_ETH_BALANCE);
@@ -87,10 +104,24 @@ contract GemsRefundTest is Test {
         uint256 gemsBalanceAfter = gems.balanceOf(holder);
 
         uint256 expectedEthBalance =
-            (((((REFUND_VALUE * WAD_PRECISION)) / gemsRefund.getLatestPrice()) * _amount) / GEMS_PRECISION);
+            (((((REFUND_VALUE * PRICE_FEED_PRECISION)) / gemsRefund.getLatestPrice()) * _amount) / GEMS_PRECISION);
         uint256 actualEthBalance = holder.balance;
         assertEq(actualEthBalance, expectedEthBalance);
         assertEq(gemsBalanceAfter, gemsBalanceBefore - _amount);
+    }
+
+    function test_refund_reverts_if_gemsAmount_less_than_minimum(uint256 _amount) public {
+        vm.assume(_amount < MINIMUM_GEMS_FOR_REFUND);
+        vm.warp(EXPIRY_TIME + 1);
+        vm.expectRevert(GemsRefund.GemsRefund__RefundAmountTooSmall.selector);
+        gemsRefund.refund(_amount);
+    }
+
+    function test_refund_reverts_if_gemsAmount_more_than_maximum(uint256 _amount) public {
+        vm.assume(_amount > GEMS_SUPPLY);
+        vm.warp(EXPIRY_TIME + 1);
+        vm.expectRevert(GemsRefund.GemsRefund__InvalidAmount.selector);
+        gemsRefund.refund(_amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -113,7 +144,7 @@ contract GemsRefundTest is Test {
 
     function test_withdrawEth_reverts_if_insufficient_balance() public {
         vm.prank(gemsRefund.owner());
-        vm.expectRevert(GemsRefund.GemsRefund__InsufficientEthBalance.selector);
+        vm.expectRevert(GemsRefund.GemsRefund__EthTransferFailed.selector);
         gemsRefund.withdrawEth(1);
     }
 
