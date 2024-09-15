@@ -30,7 +30,7 @@ rule refundRevertsIfGemsBalanceInsufficient(uint amount) {
     env e;
     require e.msg.sender != currentContract;
     require e.block.timestamp >= getExpiryTime();
-    require amount > MINIMUM_GEMS_REFUND();
+    require amount >= MINIMUM_GEMS_REFUND();
     require gems.balanceOf(e.msg.sender) < amount;
 
     refund@withrevert(e, amount);
@@ -61,7 +61,7 @@ rule refundIntegrity(uint amount) {
     env e;
     require e.msg.sender != currentContract;
     require e.block.timestamp >= getExpiryTime();
-    require amount > MINIMUM_GEMS_REFUND();
+    require amount >= MINIMUM_GEMS_REFUND();
     require gems.balanceOf(e.msg.sender) >= amount;
 
     mathint gemsBalanceBefore = gems.balanceOf(e.msg.sender);
