@@ -28,15 +28,24 @@ contract GemsRefund is Ownable {
     /*//////////////////////////////////////////////////////////////
                                VARIABLES
     //////////////////////////////////////////////////////////////*/
+    /// @dev GEMS have 6 decimals
     uint256 internal constant GEMS_PRECISION = 10 ** 6;
+    /// @dev 0.01 GEMS is the minimum that can be refunded
     uint256 internal constant MINIMUM_GEMS_FOR_REFUND = 10 ** 4;
+    /// @dev Chainlink price feeds have 8 decimals
     uint256 internal constant PRICE_FEED_PRECISION = 10 ** 8;
+    /// @dev Refund reimbursement is $4 worth of ETH per GEMS
     uint256 internal constant REFUND_VALUE = 4 * 1e18;
+    /// @dev GEMS::totalSupply is 21 million
     uint256 internal constant GEMS_SUPPLY = 21_000_000 * GEMS_PRECISION;
+    /// @dev Refund value scaled to price feed
     uint256 internal constant REFUND_VALUE_BY_PRICE_FEED = REFUND_VALUE * PRICE_FEED_PRECISION;
 
+    /// @dev GEMS token
     IERC20 internal immutable i_gems;
+    /// @dev Chainlink ETH/USD price feed
     AggregatorV3Interface internal immutable i_priceFeed;
+    /// @dev Unix timestamp refunds can be executed on and after
     uint256 internal immutable i_expiryTime;
 
     /*//////////////////////////////////////////////////////////////
