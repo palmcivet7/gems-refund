@@ -86,6 +86,7 @@ contract GemsRefund is Ownable {
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
     /// @notice msg.sender must approve address(this) on GEMS contract first
+    /// @param _gemsAmount Amount of GEMS tokens the user wants refunded
     function refund(uint256 _gemsAmount) external {
         //slither-disable-next-line timestamp
         if (block.timestamp < i_expiryTime) revert GemsRefund__RefundPolicyNotActiveYet();
@@ -113,7 +114,6 @@ contract GemsRefund is Ownable {
     }
 
     function withdrawGems(uint256 _amount) external onlyOwner {
-        if (_amount > i_gems.balanceOf(address(this))) revert GemsRefund__InsufficientGemsBalance();
         if (!i_gems.transfer(msg.sender, _amount)) revert GemsRefund__GemsTransferFailed();
     }
 
