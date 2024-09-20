@@ -59,7 +59,7 @@ contract GemsRefund is Ownable {
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
     //////////////////////////////////////////////////////////////*/
-    modifier noZeroAddress(address _address) {
+    modifier revertIfZeroAddress(address _address) {
         if (_address == address(0)) revert GemsRefund__NoZeroAddress();
         _;
     }
@@ -73,8 +73,8 @@ contract GemsRefund is Ownable {
     constructor(address _gems, address _priceFeed, uint256 _expiryTime)
         payable
         Ownable(msg.sender)
-        noZeroAddress(_gems)
-        noZeroAddress(_priceFeed)
+        revertIfZeroAddress(_gems)
+        revertIfZeroAddress(_priceFeed)
     {
         if (_expiryTime < block.timestamp) revert GemsRefund__InvalidExpiryTime();
         i_gems = IERC20(_gems);
