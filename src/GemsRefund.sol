@@ -82,6 +82,8 @@ contract GemsRefund is Ownable {
         i_expiryTime = _expiryTime;
     }
 
+    receive() external payable {}
+
     /*//////////////////////////////////////////////////////////////
                            EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////*/
@@ -137,6 +139,4 @@ contract GemsRefund is Ownable {
     function getExpiryTime() external view returns (uint256) {
         return i_expiryTime;
     }
-
-    receive() external payable {}
 }
